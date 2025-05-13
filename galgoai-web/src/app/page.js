@@ -113,7 +113,7 @@ export default function Home() {
             }
           }}
           placeholder="Escribe un mensaje…"
-          className="flex-1 border border-gray-300 rounded-full shadow-lg px-6 py-3 mr-2 resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="flex-1 border border-gray-300 rounded-full shadow-lg px-6 py-3 mr-2 resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-300 text-gray-800"
         />
 
         <button
