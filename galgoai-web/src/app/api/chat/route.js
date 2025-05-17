@@ -1,25 +1,23 @@
-// src/app/api/chat/route.js
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(request) {
   try {
     const { messages } = await request.json();
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: messages.map((m) => ({
-        role: m.sender === "user" ? "user" : "assistant",
-        content: m.text,
-      })),
+    const userMessage = messages.find((m) => m.sender === "user")?.text;
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pregunta: userMessage }),
     });
-    const botReply = response.choices[0].message.content;
-    return NextResponse.json({ text: botReply });
+
+    if (!res.ok) throw new Error("Error en el backend");
+
+    const data = await res.json();
+    return NextResponse.json({ text: data.respuesta });
+
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error al contactar a la API" }, { status: 500 });
+    return NextResponse.json({ error: "Error al contactar al backend" }, { status: 500 });
   }
 }
