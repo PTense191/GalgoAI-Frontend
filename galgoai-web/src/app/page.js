@@ -17,6 +17,22 @@ export default function Home() {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Cargar historial al iniciar sesión
+  useEffect(() => {
+    if (!session?.user?.email) return;
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
+      .then(res => res.json())
+      .then(data => {
+        const historial = data.map((entry) => [
+          { sender: "user", text: entry.mensaje_usuario },
+          { sender: "bot", text: entry.respuesta_asistente }
+        ]).flat();
+        setMessages((prev) => [...historial, ...prev]);
+      })
+      .catch(err => console.error("Error cargando historial:", err));
+  }, [session]);
+
   const sendMessage = async () => {
     const text = inputRef.current.value.trim();
     if (!text) return;
@@ -34,6 +50,23 @@ export default function Home() {
       const data = await res.json();
       if (data.text) {
         setMessages((prev) => [...prev, { sender: "bot", text: data.text }]);
+
+        // Guardar conversación en el historial
+        if (session?.user?.email) {
+  const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
+  const session_id = `${session.user.email}_${today}`;
+
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_email: session.user.email,
+          mensaje_usuario: text,
+          respuesta_asistente: data.text,
+          session_id: session_id,
+        }),
+      }).catch(err => console.error("Error guardando historial:", err));
+    }
       }
     } catch (err) {
       console.error(err);
