@@ -4,7 +4,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
+//npm install next-auth @next-auth/prisma-adapter @prisma/client
+//npm install prisma --save-dev
+import { useSession, signIn, signOut } from "next-auth/react";
+
 export default function Home() {
+  const { data: session } = useSession();
+
+  // Sesion Iniciada, va antes de el bloque de inicio de sesión para evitar problemas con hooks
   const initialMessages = [
     {
       sender: "bot",
@@ -49,6 +56,24 @@ export default function Home() {
       })
     }
   }, [messages]);
+
+  // Bloquea el chat si no se ha iniciado sesion
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-800">
+        <div className="p-8 bg-white rounded-lg shadow-lg text-center text-gray-800">
+          <h1 className="text-2xl font-bold mb-4 text-gray-800">Acceso Restringido</h1>
+          <p className="mb-4 text-gray-800">Debes iniciar sesión con tu correo institucional</p>
+          <button
+            onClick={() => signIn("google")}
+            className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600"
+          >
+            Iniciar Sesión con Google
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="flex flex-col h-screen max-w-screen-md mx-auto">
@@ -113,7 +138,7 @@ export default function Home() {
             }
           }}
           placeholder="Escribe un mensaje…"
-          className="flex-1 border border-gray-300 rounded-full shadow-lg px-6 py-3 mr-2 resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="flex-1 border border-gray-300 rounded-full shadow-lg px-6 py-3 mr-2 resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-300 text-gray-800"
         />
 
         <button

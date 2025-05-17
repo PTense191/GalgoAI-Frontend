@@ -1,5 +1,6 @@
 // src/app/layout.js
 import "./globals.css";
+import SessionWrapper from './SessionWrapper';
 
 export const metadata = {
   title: "GalgoAI Chat",
@@ -10,7 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {children}
+        <SessionWrapper>
+          {children}
+        </SessionWrapper>
       </body>
     </html>
   );
