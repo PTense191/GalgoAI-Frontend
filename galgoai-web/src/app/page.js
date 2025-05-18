@@ -13,6 +13,14 @@ export default function Home() {
   const containerRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+  const local = localStorage.getItem("galgoai_chat");
+  if (local && messages.length === 0) {
+    setMessages(JSON.parse(local));
+    setLoading(false); // 👈 importante para quitar pantalla de "Cargando"
+  }
+}, []);
+
   // Cargar historial al iniciar sesión
  useEffect(() => {
   if (!session?.user?.email) return;
@@ -91,6 +99,10 @@ export default function Home() {
     }
   }, [messages]);
 
+  useEffect(() => {
+  localStorage.setItem("galgoai_chat", JSON.stringify(messages));
+}, [messages]);
+
  if (loading) {
   return (
     <div className="flex items-center justify-center h-screen bg-white">
@@ -130,21 +142,23 @@ if (!session) {
         ref={containerRef}
         className="flex-1 overflow-y-auto p-4 rounded-lg shadow-lg bg-[url('/wallpaper.png')] bg-cover bg-center scroll-bg"
       >
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`mb-2 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-          >
+        {messages
+          .filter((msg) => msg.sender && msg.text)  // <--- solo renderiza válidos
+          .map((msg, i) => (
             <div
-              className={`animate-fade-in break-words text-justify overflow-hidden p-2 rounded-lg max-w-md border ${
-                msg.sender === "user"
-                  ? "bg-green-100 border-green-300 text-black"
-                  : "bg-gray-200 border-gray-400 text-black font-courier text-sm"
-              }`}
+              key={i}
+              className={`mb-2 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.text}
+              <div
+                className={`animate-fade-in break-words text-justify overflow-hidden p-2 rounded-lg max-w-md border ${
+                  msg.sender === "user"
+                    ? "bg-green-100 border-green-300 text-black"
+                    : "bg-gray-200 border-gray-400 text-black font-courier text-sm"
+                }`}
+              >
+                {msg.text}
+              </div>
             </div>
-          </div>
         ))}
       </div>
 
