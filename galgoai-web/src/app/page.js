@@ -7,54 +7,73 @@ import { useSession, signIn } from "next-auth/react";
 export default function Home() {
   const { data: session } = useSession();
 
-  const [messages, setMessages] = useState([
-    {
-      sender: "bot",
-      text: "¡Hola! Soy el asistente virtual del Instituto Tecnológico de Tijuana. ¿En qué puedo ayudarte hoy?"
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const inputRef = useRef(null);
   const containerRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [localLoaded, setLocalLoaded] = useState(false);
+
+  useEffect(() => {
+  const local = localStorage.getItem("galgoai_chat");
+  if (local && messages.length === 0) {
+    setMessages(JSON.parse(local));
+    setLocalLoaded(true);
+    setLoading(false); // 👈 importante para quitar pantalla de "Cargando"
+  }
+}, []);
 
   // Cargar historial al iniciar sesión
-  useEffect(() => {
-    if (!session?.user?.email) return;
+useEffect(() => {
+  if (!session?.user?.email || localLoaded) return; // ✅ evita sobrescribir lo local
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
-      .then(res => res.json())
-      .then(data => {
-        const historial = data.map((entry) => [
-          { sender: "user", text: entry.mensaje_usuario },
-          { sender: "bot", text: entry.respuesta_asistente }
-        ]).flat();
-        setMessages((prev) => [...historial, ...prev]);
-      })
-      .catch(err => console.error("Error cargando historial:", err));
-  }, [session]);
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
+    .then(res => res.json())
+    .then(data => {
+      const historial = data.map((entry) => [
+        { sender: "user", text: entry.mensaje_usuario },
+        { sender: "bot", text: entry.respuesta_asistente }
+      ]).flat();
+
+      if (historial.length > 0) {
+        setMessages(historial);
+      } else {
+        setMessages([
+          {
+            sender: "bot",
+            text: "¡Hola! Soy el asistente virtual del Instituto Tecnológico de Tijuana. ¿En qué puedo ayudarte hoy?"
+          }
+        ]);
+      }
+    })
+    .catch(err => console.error("Error cargando historial:", err))
+    .finally(() => setLoading(false));
+}, [session, localLoaded]); // 👈 incluye localLoaded
 
   const sendMessage = async () => {
     const text = inputRef.current.value.trim();
     if (!text) return;
 
     const updated = [...messages, { sender: "user", text }];
+    const mensajesFiltrados = updated.filter(m => m.sender && m.text);
+
     setMessages(updated);
     inputRef.current.value = "";
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("https://galgoai-backend.onrender.com/consultar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updated }),
+        body: JSON.stringify({ mensajes: mensajesFiltrados }), // Enviamos todos los mensajes
       });
       const data = await res.json();
-      if (data.text) {
-        setMessages((prev) => [...prev, { sender: "bot", text: data.text }]);
+      if (data.respuesta) {
+        setMessages((prev) => [...prev, { sender: "bot", text: data.respuesta }]);
 
         // Guardar conversación en el historial
         if (session?.user?.email) {
-  const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
-  const session_id = `${session.user.email}_${today}`;
+          const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
+          const session_id = `${session.user.email}_${today}`;
 
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
         method: "POST",
@@ -62,7 +81,7 @@ export default function Home() {
         body: JSON.stringify({
           user_email: session.user.email,
           mensaje_usuario: text,
-          respuesta_asistente: data.text,
+          respuesta_asistente: data.respuesta,
           session_id: session_id,
         }),
       }).catch(err => console.error("Error guardando historial:", err));
@@ -82,22 +101,34 @@ export default function Home() {
     }
   }, [messages]);
 
-  if (!session) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-800">
-        <div className="p-8 bg-white rounded-lg shadow-lg text-center text-gray-800">
-          <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
-          <p className="mb-4">Debes iniciar sesión con tu correo institucional</p>
-          <button
-            onClick={() => signIn("google")}
-            className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600"
-          >
-            Iniciar Sesión con Google
-          </button>
-        </div>
+  useEffect(() => {
+  localStorage.setItem("galgoai_chat", JSON.stringify(messages));
+}, [messages]);
+
+ if (loading) {
+  return (
+    <div className="flex items-center justify-center h-screen bg-white">
+      <p className="text-gray-500 text-xl">Cargando chat...</p>
+    </div>
+  );
+}
+
+if (!session) {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-800">
+      <div className="p-8 bg-white rounded-lg shadow-lg text-center text-gray-800">
+        <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
+        <p className="mb-4">Debes iniciar sesión con tu correo institucional</p>
+        <button
+          onClick={() => signIn("google")}
+          className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600"
+        >
+          Iniciar Sesión con Google
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <main className="flex flex-col h-screen max-w-screen-md mx-auto">
@@ -113,21 +144,23 @@ export default function Home() {
         ref={containerRef}
         className="flex-1 overflow-y-auto p-4 rounded-lg shadow-lg bg-[url('/wallpaper.png')] bg-cover bg-center scroll-bg"
       >
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`mb-2 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
-          >
+        {messages
+          .filter((msg) => msg.sender && msg.text)  // <--- solo renderiza válidos
+          .map((msg, i) => (
             <div
-              className={`animate-fade-in break-words text-justify overflow-hidden p-2 rounded-lg max-w-md border ${
-                msg.sender === "user"
-                  ? "bg-green-100 border-green-300 text-black"
-                  : "bg-gray-200 border-gray-400 text-black font-courier text-sm"
-              }`}
+              key={i}
+              className={`mb-2 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.text}
+              <div
+                className={`animate-fade-in break-words text-justify overflow-hidden p-2 rounded-lg max-w-md border ${
+                  msg.sender === "user"
+                    ? "bg-green-100 border-green-300 text-black"
+                    : "bg-gray-200 border-gray-400 text-black font-courier text-sm"
+                }`}
+              >
+                {msg.text}
+              </div>
             </div>
-          </div>
         ))}
       </div>
 
