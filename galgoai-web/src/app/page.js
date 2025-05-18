@@ -45,6 +45,8 @@ export default function Home() {
     if (!text) return;
 
     const updated = [...messages, { sender: "user", text }];
+    const mensajesFiltrados = updated.filter(m => m.sender && m.text);
+
     setMessages(updated);
     inputRef.current.value = "";
 
@@ -52,7 +54,7 @@ export default function Home() {
       const res = await fetch("https://galgoai-backend.onrender.com/consultar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensajes: updated }), // Enviamos todos los mensajes
+        body: JSON.stringify({ mensajes: mensajesFiltrados }), // Enviamos todos los mensajes
       });
       const data = await res.json();
       if (data.respuesta) {
