@@ -7,31 +7,36 @@ import { useSession, signIn } from "next-auth/react";
 export default function Home() {
   const { data: session } = useSession();
 
-  const [messages, setMessages] = useState([
-    {
-      sender: "bot",
-      text: "¡Hola! Soy el asistente virtual del Instituto Tecnológico de Tijuana. ¿En qué puedo ayudarte hoy?"
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
   // Cargar historial al iniciar sesión
   useEffect(() => {
-    if (!session?.user?.email) return;
+  if (!session?.user?.email) return;
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
-      .then(res => res.json())
-      .then(data => {
-        const historial = data.map((entry) => [
-          { sender: "user", text: entry.mensaje_usuario },
-          { sender: "bot", text: entry.respuesta_asistente }
-        ]).flat();
-        setMessages((prev) => [...historial, ...prev]);
-      })
-      .catch(err => console.error("Error cargando historial:", err));
-  }, [session]);
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
+    .then(res => res.json())
+    .then(data => {
+      const historial = data.map((entry) => [
+        { sender: "user", text: entry.mensaje_usuario },
+        { sender: "bot", text: entry.respuesta_asistente }
+      ]).flat();
+
+      if (historial.length > 0) {
+        setMessages(historial);
+      } else {
+        setMessages([
+          {
+            sender: "bot",
+            text: "¡Hola! Soy el asistente virtual del Instituto Tecnológico de Tijuana. ¿En qué puedo ayudarte hoy?"
+          }
+        ]);
+      }
+    })
+    .catch(err => console.error("Error cargando historial:", err));
+}, [session]);
 
   const sendMessage = async () => {
     const text = inputRef.current.value.trim();
