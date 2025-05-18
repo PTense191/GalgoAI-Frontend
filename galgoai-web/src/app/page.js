@@ -12,18 +12,20 @@ export default function Home() {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const [localLoaded, setLocalLoaded] = useState(false);
 
   useEffect(() => {
   const local = localStorage.getItem("galgoai_chat");
   if (local && messages.length === 0) {
     setMessages(JSON.parse(local));
+    setLocalLoaded(true);
     setLoading(false); // 👈 importante para quitar pantalla de "Cargando"
   }
 }, []);
 
   // Cargar historial al iniciar sesión
- useEffect(() => {
-  if (!session?.user?.email) return;
+useEffect(() => {
+  if (!session?.user?.email || localLoaded) return; // ✅ evita sobrescribir lo local
 
   fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
     .then(res => res.json())
@@ -45,8 +47,8 @@ export default function Home() {
       }
     })
     .catch(err => console.error("Error cargando historial:", err))
-    .finally(() => setLoading(false)); // 🔥 IMPORTANTE
-}, [session]);
+    .finally(() => setLoading(false));
+}, [session, localLoaded]); // 👈 incluye localLoaded
 
   const sendMessage = async () => {
     const text = inputRef.current.value.trim();
