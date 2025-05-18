@@ -42,7 +42,7 @@ export default function Home() {
     inputRef.current.value = "";
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
+      const res = await fetch("https://galgoai-backend.onrender.com/consultar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensajes: updated }), // Enviamos todos los mensajes
