@@ -43,10 +43,10 @@ export default function Home() {
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pregunta: text }),
-        });
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mensajes: updated }), // Enviamos todos los mensajes
+      });
       const data = await res.json();
       if (data.respuesta) {
         setMessages((prev) => [...prev, { sender: "bot", text: data.respuesta }]);
