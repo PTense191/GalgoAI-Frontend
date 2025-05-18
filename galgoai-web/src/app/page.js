@@ -11,9 +11,10 @@ export default function Home() {
 
   const inputRef = useRef(null);
   const containerRef = useRef(null);
+  const [loading, setLoading] = useState(true);
 
   // Cargar historial al iniciar sesión
-  useEffect(() => {
+ useEffect(() => {
   if (!session?.user?.email) return;
 
   fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
@@ -35,7 +36,8 @@ export default function Home() {
         ]);
       }
     })
-    .catch(err => console.error("Error cargando historial:", err));
+    .catch(err => console.error("Error cargando historial:", err))
+    .finally(() => setLoading(false)); // 🔥 IMPORTANTE
 }, [session]);
 
   const sendMessage = async () => {
@@ -87,22 +89,30 @@ export default function Home() {
     }
   }, [messages]);
 
-  if (!session) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-800">
-        <div className="p-8 bg-white rounded-lg shadow-lg text-center text-gray-800">
-          <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
-          <p className="mb-4">Debes iniciar sesión con tu correo institucional</p>
-          <button
-            onClick={() => signIn("google")}
-            className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600"
-          >
-            Iniciar Sesión con Google
-          </button>
-        </div>
+ if (loading) {
+  return (
+    <div className="flex items-center justify-center h-screen bg-white">
+      <p className="text-gray-500 text-xl">Cargando chat...</p>
+    </div>
+  );
+}
+
+if (!session) {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 text-gray-800">
+      <div className="p-8 bg-white rounded-lg shadow-lg text-center text-gray-800">
+        <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
+        <p className="mb-4">Debes iniciar sesión con tu correo institucional</p>
+        <button
+          onClick={() => signIn("google")}
+          className="bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600"
+        >
+          Iniciar Sesión con Google
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <main className="flex flex-col h-screen max-w-screen-md mx-auto">
