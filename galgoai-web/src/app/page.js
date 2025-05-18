@@ -62,7 +62,7 @@ export default function Home() {
         body: JSON.stringify({
           user_email: session.user.email,
           mensaje_usuario: text,
-          respuesta_asistente: data.text,
+          respuesta_asistente: data.respuesta,
           session_id: session_id,
         }),
       }).catch(err => console.error("Error guardando historial:", err));
