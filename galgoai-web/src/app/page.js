@@ -42,19 +42,19 @@ export default function Home() {
     inputRef.current.value = "";
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updated }),
-      });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pregunta: text }),
+        });
       const data = await res.json();
-      if (data.text) {
-        setMessages((prev) => [...prev, { sender: "bot", text: data.text }]);
+      if (data.respuesta) {
+        setMessages((prev) => [...prev, { sender: "bot", text: data.respuesta }]);
 
         // Guardar conversación en el historial
         if (session?.user?.email) {
-  const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
-  const session_id = `${session.user.email}_${today}`;
+          const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
+          const session_id = `${session.user.email}_${today}`;
 
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
         method: "POST",
