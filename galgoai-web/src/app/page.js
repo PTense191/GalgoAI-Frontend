@@ -71,6 +71,23 @@ useEffect(() => {
         setMessages((prev) => [...prev, { sender: "bot", text: data.respuesta }]);
 
         // Guardar conversación en el historial
+<<<<<<< HEAD
+      if (session?.user?.email) {
+        const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
+        const session_id = `${session.user.email}_${today}`;
+
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_email: session.user.email,
+            mensaje_usuario: text,
+            respuesta_asistente: data.text,
+            session_id: session_id,
+          }),
+        }).catch(err => console.error("Error guardando historial:", err));
+      }
+=======
         if (session?.user?.email) {
           const today = new Date().toISOString().split("T")[0]; // "2025-05-16"
           const session_id = `${session.user.email}_${today}`;
@@ -86,6 +103,7 @@ useEffect(() => {
         }),
       }).catch(err => console.error("Error guardando historial:", err));
     }
+>>>>>>> main
       }
     } catch (err) {
       console.error(err);
