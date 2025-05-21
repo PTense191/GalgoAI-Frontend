@@ -1,10 +1,23 @@
+/* File: globals.css */
+
+/* 1. Declara la fuente Pixel Digivolve */
+@font-face {
+  font-family: "PixelDigivolve";
+  src: url("/fonts/pixel_digivolve.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 2. Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
+/* 3. Import de Tailwind (si lo necesitas) */
 @import "tailwindcss";
 
+/* 4. Variables de color y fuentes */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -17,6 +30,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 5. Modo oscuro */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -24,6 +38,7 @@
   }
 }
 
+/* 6. Estilos globales */
 body {
   font-family: "Times New Roman", Times, serif;
   font-size: 15px;
@@ -31,18 +46,22 @@ body {
   color: var(--foreground);
 }
 
+/* 7. Clases auxiliares */
+
+/* Contenedor de fondo con scroll */
 .scroll-bg {
   background-attachment: scroll;
 }
 
+/* Ocultar la scrollbar en textarea */
 textarea::-webkit-scrollbar {
   display: none;
 }
-
 textarea {
   scrollbar-width: none; /* Firefox */
 }
 
+/* Animación de aparición */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -53,11 +72,14 @@ textarea {
     transform: translateY(0);
   }
 }
-
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }
 
+/* Tipografías mono y pixel */
 .font-courier {
   font-family: "Courier New", Courier, monospace;
+}
+.font-pixel {
+  font-family: "PixelDigivolve", sans-serif;
 }
