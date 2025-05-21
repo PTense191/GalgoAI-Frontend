@@ -132,7 +132,17 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <div className="p-8 bg-white rounded-lg shadow-lg text-center">
           <h1 className="text-2xl font-bold mb-4 font-pixel uppercase text-4xl">GALGOAI CHAT</h1>
-          <p className="mb-4">Inicia sesión con tu correo institucional</p>
+          <div className="flex justify-center mb-6">
+              <div className="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/bot.png"
+                  width={128}
+                  height={128}
+                  alt="GalgoAI Logo"
+                  className="object-contain"
+                />
+              </div>
+            </div>
           <button
             onClick={() => signIn("google", {prompt: "select_account"})}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
