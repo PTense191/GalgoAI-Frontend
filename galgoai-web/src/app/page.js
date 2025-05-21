@@ -131,10 +131,10 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <div className="p-8 bg-white rounded-lg shadow-lg text-center">
-          <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
+          <h1 className="text-2xl font-bold mb-4 font-pixel uppercase text-4xl">GALGOAI CHAT</h1>
           <p className="mb-4">Inicia sesión con tu correo institucional</p>
           <button
-            onClick={() => signIn("google")}
+            onClick={() => signIn("google", {prompt: "select_account"})}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
           >
             Iniciar Sesión con Google
