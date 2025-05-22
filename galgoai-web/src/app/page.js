@@ -18,6 +18,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuSessionId, setMenuSessionId] = useState(null);
   const [customTitles, setCustomTitles] = useState({});
+  const [editingSessionId, setEditingSessionId] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -214,7 +215,7 @@ export default function Home() {
                   onClick={() => selectSession(id)}
                   className="mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors cursor-pointer relative"
                 >
-                  {menuSessionId === id ? (
+                  {editingSessionId === id ? (
                     <input
                       autoFocus
                       type="text"
@@ -246,11 +247,11 @@ export default function Home() {
                                 ...prev,
                                 [id]: nuevo,
                               }));
-                              setMenuSessionId(null);
+                              setEditingSessionId(null);
                             });
                           }
                         } else if (e.key === "Escape") {
-                          setMenuSessionId(null);
+                          setEditingSessionId(null);
                         }
                       }}
                       className="w-full p-1 border rounded text-sm"
@@ -258,9 +259,11 @@ export default function Home() {
                   ) : (
                     <>
                       <p className="font-medium">
-                        {historyData
-                          .find((e) => e.session_id === id)
-                          ?.mensaje_usuario.slice(0, 20) || id.split("_").pop()}
+                        {customTitles[id] ||
+                          historyData
+                            .find((e) => e.session_id === id)
+                            ?.mensaje_usuario.slice(0, 20) ||
+                          id.split("_").pop()}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         {new Date(
@@ -290,6 +293,8 @@ export default function Home() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setEditingSessionId(id);
+                          setMenuSessionId(null);
                           // Mostrar campo de edición en línea (ya se maneja con menuSessionId === id)
                         }}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-100"
