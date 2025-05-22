@@ -79,7 +79,18 @@ export default function Home() {
           { sender: "bot", text: e.respuesta_asistente, timestamp: time },
         ];
       });
-    setMessages(msgs);
+
+    if (msgs.length > 0) {
+      setMessages(msgs);
+    } else {
+      setMessages([
+        {
+          sender: "bot",
+          text: "¡Hola! ¿En qué puedo ayudarte hoy?",
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+    }
   };
 
   const newChat = async () => {
@@ -467,8 +478,8 @@ export default function Home() {
                   {/* Menú si está activo */}
                   {menuSessionId === id && (
                     <div
-                      id="session-menu"
-                      className="absolute right-2 top-7 w-32 bg-white border rounded shadow-md z-10"
+                      id={`session-menu-${id}`}
+                      className="absolute right-2 top-7 w-32 bg-white border rounded shadow-md z-50"
                     >
                       <button
                         onClick={(e) => {
