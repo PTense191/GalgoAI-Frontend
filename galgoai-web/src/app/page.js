@@ -371,23 +371,20 @@ export default function Home() {
   const filtered = sessions.filter((id) => id.includes(searchTerm));
 
   return (
-    <main className="flex h-screen">
+    <main className="relative h-screen">
       {/* Sidebar */}
       <aside
         className={`
-          flex flex-col bg-gray-100 p-4 overflow-y-auto
-          transition-all duration-300 ease-in-out
-          ${sidebarOpen ? "w-1/4" : "w-0"}
-        `}
+    fixed top-0 left-0 h-full bg-gray-100 p-4 overflow-y-auto overflow-x-hidden z-40
+    transition-all duration-300 ease-in-out
+    ${sidebarOpen ? "w-1/4" : "w-0"}
+  `}
       >
         {sidebarOpen && (
           <>
-            <input
-              type="text"
-              placeholder="Buscar chat..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mb-4 p-2 border rounded focus:ring"
+            <div
+              className="fixed inset-0 bg-black bg-opacity-40 z-30"
+              onClick={() => setSidebarOpen(false)}
             />
             <button
               onClick={newChat}
@@ -549,13 +546,22 @@ export default function Home() {
         )}
       </aside>
 
+      {/* Overlay que se muestra detrás del sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Chat area */}
-      <section className="flex flex-col flex-1">
+      <section className="flex flex-col w-full h-full ml-0 transition-all duration-300">
         {/* Header con botón burger y logo a la izquierda */}
         <header className="relative flex items-center justify-between h-16 px-6 bg-gradient-to-b from-teal-200 to-teal-500">
           {/* Grupo burger + logo a la izquierda */}
           <div className="flex items-center">
             <button
+              aria-label="Alternar menú"
               onClick={() => setSidebarOpen((o) => !o)}
               className="p-2 mr-4 text-white focus:outline-none hover:cursor-pointer"
             >
