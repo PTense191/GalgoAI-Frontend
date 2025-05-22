@@ -17,6 +17,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuSessionId, setMenuSessionId] = useState(null);
+  const [customTitles, setCustomTitles] = useState({});
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -204,40 +205,30 @@ export default function Home() {
             {filtered.map((id) => {
               const first = historyData.find((e) => e.session_id === id);
               const snippet =
+                customTitles[id] ||
                 first?.mensaje_usuario.slice(0, 20) +
-                (first?.mensaje_usuario.length > 20 ? "…" : "");
+                  (first?.mensaje_usuario.length > 20 ? "…" : "");
               return (
                 <div
                   key={id}
                   onClick={() => selectSession(id)}
                   className="mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors cursor-pointer relative"
                 >
-                  <p className="font-medium">
-                    {snippet || id.split("_").pop()}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(Number(id.split("_").pop())).toLocaleDateString()}
-                  </p>
-
-                  <button
-                    className="absolute top-1 right-2 text-lg font-bold text-gray-500 hover:text-black cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuSessionId((prev) => (prev === id ? null : id));
-                    }}
-                  >
-                    …
-                  </button>
-
-                  {menuSessionId === id && (
-                    <div
-                      id="session-menu"
-                      className="absolute right-2 top-7 w-32 bg-white border rounded shadow-md z-10"
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const nuevo = prompt("Nuevo título:");
+                  {menuSessionId === id ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      defaultValue={
+                        customTitles[id] ||
+                        historyData
+                          .find((e) => e.session_id === id)
+                          ?.mensaje_usuario.slice(0, 20) ||
+                        ""
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const nuevo = e.target.value.trim();
                           if (nuevo) {
                             fetch(
                               `${process.env.NEXT_PUBLIC_API_URL}/titulos`,
@@ -251,10 +242,55 @@ export default function Home() {
                                 }),
                               },
                             ).then(() => {
-                              // Refrescar los títulos locales si los estás usando
+                              setCustomTitles((prev) => ({
+                                ...prev,
+                                [id]: nuevo,
+                              }));
                               setMenuSessionId(null);
                             });
                           }
+                        } else if (e.key === "Escape") {
+                          setMenuSessionId(null);
+                        }
+                      }}
+                      className="w-full p-1 border rounded text-sm"
+                    />
+                  ) : (
+                    <>
+                      <p className="font-medium">
+                        {historyData
+                          .find((e) => e.session_id === id)
+                          ?.mensaje_usuario.slice(0, 20) || id.split("_").pop()}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(
+                          Number(id.split("_").pop()),
+                        ).toLocaleDateString()}
+                      </p>
+                    </>
+                  )}
+
+                  {/* Botón menú de sesión */}
+                  <button
+                    className="absolute top-1 right-2 text-lg font-bold text-gray-500 hover:text-black cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuSessionId((prev) => (prev === id ? null : id));
+                    }}
+                  >
+                    …
+                  </button>
+
+                  {/* Menú si está activo */}
+                  {menuSessionId === id && (
+                    <div
+                      id="session-menu"
+                      className="absolute right-2 top-7 w-32 bg-white border rounded shadow-md z-10"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Mostrar campo de edición en línea (ya se maneja con menuSessionId === id)
                         }}
                         className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                       >
@@ -384,7 +420,7 @@ export default function Home() {
           className="flex-1 overflow-y-auto p-4 scroll-bg"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1)), url('/nuevofondo.jpeg')",
+              "linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1)), url('/fondofinal.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
