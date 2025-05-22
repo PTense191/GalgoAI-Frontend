@@ -15,8 +15,12 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editedTitle, setEditedTitle] = useState("");
   const containerRef = useRef(null);
   const inputRef = useRef(null);
+  const menuRefs = useRef({});
 
   // Cargar historial al autenticarse
   useEffect(() => {
@@ -170,6 +174,18 @@ export default function Home() {
     }
   }, [messages, selectedSession]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const ref = menuRefs.current[openMenuId];
+      if (ref && !ref.contains(e.target)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openMenuId]);
+
   // Validación de sesión
   if (loadingSession) {
     return (
@@ -240,20 +256,110 @@ export default function Home() {
           const snippet = mensaje
             ? mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "")
             : "Chat sin título";
+
           return (
             <div
               key={id}
-              onClick={() => selectSession(id)}
-              className="mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors cursor-pointer"
+              className="relative mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors"
             >
-              <p className="font-medium">{snippet || id.split("_").pop()}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {/^\d+$/.test(id.split("_").pop())
-                  ? new Date(Number(id.split("_").pop())).toLocaleDateString(
-                      "es-MX",
-                    )
-                  : id.split("_").pop()}
-              </p>
+              <div
+                onClick={() => selectSession(id)}
+                className="cursor-pointer pr-6"
+              >
+                {editingId === id ? (
+                  <input
+                    type="text"
+                    className="w-full border rounded px-2 py-1 text-sm"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={() => {
+                      if (editedTitle.trim()) {
+                        localStorage.setItem(
+                          `chat_title_${id}`,
+                          editedTitle.trim(),
+                        );
+                      }
+                      setEditingId(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.target.blur();
+                      }
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <>
+                    <p className="font-medium">
+                      {localStorage.getItem(`chat_title_${id}`) ||
+                        snippet ||
+                        id.split("_").pop()}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {/^\d+$/.test(id.split("_").pop())
+                        ? new Date(
+                            Number(id.split("_").pop()),
+                          ).toLocaleDateString("es-MX")
+                        : id.split("_").pop()}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Botón de opciones */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenMenuId(openMenuId === id ? null : id);
+                }}
+                className="absolute top-2 right-2 text-gray-600 bg-gray-200 rounded px-2 py-1 text-sm hover:bg-gray-300"
+              >
+                ⋯
+              </button>
+
+              {/* Menú contextual */}
+              {openMenuId === id && (
+                <div
+                  ref={(el) => (menuRefs.current[id] = el)}
+                  className="absolute right-2 top-10 z-10 bg-white border rounded shadow-md w-32 transition-all duration-150 ease-out animate-fade"
+                >
+                  <button
+                    onClick={() => {
+                      setOpenMenuId(null);
+                      setEditedTitle(
+                        localStorage.getItem(`chat_title_${id}`) ||
+                          snippet ||
+                          "",
+                      );
+                      setEditingId(id);
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (
+                        confirm(
+                          "¿Eliminar este chat? Esta acción no se puede deshacer.",
+                        )
+                      ) {
+                        localStorage.removeItem(`chat_${id}`);
+                        localStorage.removeItem(`chat_title_${id}`);
+                        setSessions((prev) => prev.filter((s) => s !== id));
+                        if (selectedSession === id) {
+                          setSelectedSession("");
+                          setMessages([]);
+                        }
+                        setOpenMenuId(null);
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-red-100 text-sm text-red-600"
+                  >
+                    🗑️ Eliminar
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
