@@ -621,7 +621,7 @@ export default function Home() {
         {/* Mensajes con avatars y burbujas */}
         <div
           ref={containerRef}
-          className="flex-1 overflow-y-auto p-4 scroll-bg"
+          className="flex-1 overflow-y-auto p-4 pb-32 scroll-bg"
           style={{
             backgroundImage:
               "linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1)), url('/fondofinal.jpg')",
@@ -679,7 +679,7 @@ export default function Home() {
         </div>
 
         {/* Input */}
-        <footer className="p-4 bg-white border-t flex">
+        <footer className="p-4 bg-white border-t flex sm:static fixed bottom-0 left-0 w-full z-50">
           <textarea
             ref={inputRef}
             rows={2}
