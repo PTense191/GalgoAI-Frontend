@@ -50,6 +50,11 @@ export default function Home() {
           .catch(console.error);
 
         const uniq = Array.from(new Set(data.map((e) => e.session_id)));
+        uniq.sort((a, b) => {
+          const tA = new Date(data.find(e => e.session_id === a)?.timestamp || 0).getTime();
+          const tB = new Date(data.find(e => e.session_id === b)?.timestamp || 0).getTime();
+          return tB - tA;
+        });
         setSessions(uniq);
 
         const last =
@@ -234,11 +239,7 @@ export default function Home() {
     );
   }
 
-  const filtered = sessions
-    .filter((id) =>
-      historyData.find((e) => e.session_id === id)?.mensaje_usuario?.trim(),
-    )
-    .filter((id) => id.includes(searchTerm));
+  const filtered = sessions.filter((id) => id.includes(searchTerm));
 
   return (
     <main className="flex h-screen">
