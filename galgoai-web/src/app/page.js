@@ -551,7 +551,7 @@ export default function Home() {
       {/* Overlay que se muestra detrás del sidebar */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-40 transition-opacity duration-300"
+          className="fixed inset-0 z-30 bg-black bg-opacity-10 backdrop-blur-sm transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
