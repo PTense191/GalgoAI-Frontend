@@ -23,19 +23,12 @@ export default function Home() {
   const inputRef = useRef(null);
 
   function obtenerFechaLegible(id) {
-    const parte = id.split("_").pop();
+    if (!id) return "Sin fecha";
 
-    try {
-      if (!isNaN(parte)) {
-        // Es un timestamp
-        return new Date(Number(parte)).toLocaleDateString();
-      } else {
-        // Es una fecha tipo ISO (ej. 2025-05-22T02:40:28.843492)
-        return new Date(parte).toLocaleDateString();
-      }
-    } catch {
-      return "Fecha desconocida";
-    }
+    const parte = id.split("_").pop();
+    const fecha = new Date(parte);
+
+    return isNaN(fecha) ? "Sin fecha" : fecha.toLocaleDateString();
   }
 
   // Cargar historial al autenticarse
@@ -109,6 +102,13 @@ export default function Home() {
     const text = inputRef.current.value.trim();
     if (!text) return;
     const time = new Date().toLocaleTimeString();
+    let currentSession = selectedSession;
+    if (!currentSession) {
+      currentSession = `${session.user.email}_${Date.now()}`;
+      setSelectedSession(currentSession);
+      setSessions((prev) => [...prev, currentSession]);
+    }
+
     const updated = [...messages, { sender: "user", text, timestamp: time }];
     setMessages(updated);
     inputRef.current.value = "";
@@ -134,7 +134,7 @@ export default function Home() {
             user_email: session.user.email,
             mensaje_usuario: text,
             respuesta_asistente: respuesta,
-            session_id: selectedSession,
+            session_id: currentSession, // <-- CORRECTO
           }),
         });
       }
@@ -243,6 +243,7 @@ export default function Home() {
                 customTitles[id] ||
                 first?.mensaje_usuario.slice(0, 20) +
                   (first?.mensaje_usuario.length > 20 ? "…" : "");
+              if (!id) return null;
               return (
                 <div
                   key={id}
@@ -264,7 +265,7 @@ export default function Home() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           const nuevo = e.target.value.trim();
-                          if (nuevo) {
+                          if (nuevo && id) {
                             fetch(
                               `${process.env.NEXT_PUBLIC_API_URL}/titulos`,
                               {
