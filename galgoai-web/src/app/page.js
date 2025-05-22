@@ -175,7 +175,8 @@ export default function Home() {
         </button>
         {filtered.map(id => {
           const first = historyData.find(e => e.session_id === id);
-          const snippet = first?.mensaje_usuario.slice(0, 20) + (first?.mensaje_usuario.length > 20 ? "…" : "");
+          const mensaje = first?.mensaje_usuario || "";
+          const snippet = mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "");
           return (
             <div
               key={id}
