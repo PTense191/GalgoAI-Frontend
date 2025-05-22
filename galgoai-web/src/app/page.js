@@ -24,10 +24,9 @@ export default function Home() {
 
   function obtenerFechaLegible(id) {
     if (!id) return "Sin fecha";
-
     const parte = id.split("_").pop();
-    const fecha = new Date(parte);
-
+    const millis = parseInt(parte, 10);
+    const fecha = new Date(isNaN(millis) ? parte : millis);
     return isNaN(fecha) ? "Sin fecha" : fecha.toLocaleDateString();
   }
 
@@ -107,6 +106,16 @@ export default function Home() {
       currentSession = `${session.user.email}_${Date.now()}`;
       setSelectedSession(currentSession);
       setSessions((prev) => [...prev, currentSession]);
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: currentSession,
+          titulo: text.slice(0, 20), // primer mensaje como título
+          user_email: session.user.email,
+        }),
+      });
     }
 
     const updated = [...messages, { sender: "user", text, timestamp: time }];
@@ -117,7 +126,7 @@ export default function Home() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensajes: updated.map((m) => m.text) }),
+        body: JSON.stringify({ mensajes: updated }),
       });
       const { respuesta } = await res.json();
       if (respuesta) {
