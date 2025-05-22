@@ -230,7 +230,7 @@ export default function Home() {
         />
         <button
           onClick={newChat}
-          className="mb-4 px-4 py-2 bg-white rounded shadow hover:shadow-md transition-shadow"
+          className="mb-4 px-4 py-2 bg-white rounded shadow hover:shadow-md transition-shadow cursor-pointer"
         >
           + Nuevo chat
         </button>
