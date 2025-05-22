@@ -40,19 +40,13 @@ export default function Home() {
         setSelectedSession(last || "");
 
         // Intentar cargar desde localStorage
-        const local = localStorage.getItem("chat_" + last);
-        if (local) {
-          setMessages(JSON.parse(local));
-          return;
-        }
-
         if (last) {
           const msgs = data
             .filter((e) => e.session_id === last)
             .flatMap((e) => {
               const userMsg = e.mensaje_usuario?.trim();
               const botMsg = e.respuesta_asistente?.trim();
-              const time = new Date().toLocaleTimeString();
+              const time = new Date(e.timestamp).toLocaleTimeString();
               const pair = [];
 
               if (userMsg)
@@ -62,6 +56,7 @@ export default function Home() {
 
               return pair;
             });
+
           setMessages(msgs);
         } else {
           setMessages([
@@ -81,18 +76,12 @@ export default function Home() {
     setSelectedSession(id);
     localStorage.setItem("last_session", id);
 
-    const local = localStorage.getItem("chat_" + id);
-    if (local) {
-      setMessages(JSON.parse(local));
-      return;
-    }
-
     const msgs = historyData
       .filter((e) => e.session_id === id)
       .flatMap((e) => {
         const userMsg = e.mensaje_usuario?.trim();
         const botMsg = e.respuesta_asistente?.trim();
-        const time = new Date().toLocaleTimeString();
+        const time = new Date(e.timestamp).toLocaleTimeString();
         const pair = [];
 
         if (userMsg)
@@ -169,12 +158,6 @@ export default function Home() {
   }, [messages]);
 
   useEffect(() => {
-    if (selectedSession && messages.length > 0) {
-      localStorage.setItem("chat_" + selectedSession, JSON.stringify(messages));
-    }
-  }, [messages, selectedSession]);
-
-  useEffect(() => {
     const handleClickOutside = (e) => {
       const ref = menuRefs.current[openMenuId];
       if (ref && !ref.contains(e.target)) {
@@ -224,13 +207,9 @@ export default function Home() {
   }
 
   const filtered = sessions
-    .filter((id) => {
-      const local = localStorage.getItem("chat_" + id);
-      return (
-        local ||
-        historyData.find((e) => e.session_id === id)?.mensaje_usuario?.trim()
-      );
-    })
+    .filter((id) =>
+      historyData.find((e) => e.session_id === id)?.mensaje_usuario?.trim(),
+    )
     .filter((id) => id.includes(searchTerm));
 
   return (
@@ -391,7 +370,7 @@ export default function Home() {
               <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded">
                 <button
                   onClick={() => {
-                    localStorage.clear();
+                    localStorage.removeItem("last_session");
                     signOut({ callbackUrl: window.location.origin });
                   }}
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
