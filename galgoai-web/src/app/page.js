@@ -559,13 +559,13 @@ export default function Home() {
       {/* Chat area */}
       <section className="flex flex-col w-full h-full ml-0 transition-all duration-300">
         {/* Header con botón burger y logo a la izquierda */}
-        <header className="relative flex items-center justify-between h-16 px-6 bg-gradient-to-b from-teal-200 to-teal-500">
-          {/* Grupo burger + logo a la izquierda */}
-          <div className="flex items-center">
+        <header className="relative flex items-center justify-between h-16 px-4 sm:px-6 bg-gradient-to-b from-teal-200 to-teal-500">
+          {/* Izquierda: botón + logo */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <button
               aria-label="Alternar menú"
               onClick={() => setSidebarOpen((o) => !o)}
-              className="p-2 mr-4 text-white focus:outline-none hover:cursor-pointer"
+              className="p-2 text-white focus:outline-none hover:cursor-pointer"
             >
               <svg
                 className="w-6 h-6"
@@ -583,25 +583,25 @@ export default function Home() {
             </button>
             <Image
               src="/project-logo.png"
-              width={64}
-              height={64}
+              width={48}
+              height={48}
               alt="GalgoAI Logo"
-              className="object-contain"
+              className="object-contain w-10 h-10 sm:w-16 sm:h-16"
             />
           </div>
 
-          {/* Título centrado */}
-          <h1 className="absolute left-1/2 transform -translate-x-1/2 uppercase font-bold text-xl sm:text-2xl md:text-4xl lg:text-5xl font-pixel">
+          {/* Título central */}
+          <h1 className="absolute left-1/2 transform -translate-x-1/2 uppercase font-bold text-lg sm:text-2xl md:text-4xl lg:text-5xl font-pixel whitespace-nowrap">
             GALGOAI CHAT
           </h1>
 
           {/* Avatar a la derecha */}
-          <div className="flex-shrink-0 mr-8 relative">
+          <div className="flex-shrink-0 mr-2 sm:mr-8 relative">
             <img
               src={session.user.image}
               alt="avatar"
               onClick={() => setMenuOpen((o) => !o)}
-              className="w-12 h-12 rounded-full cursor-pointer"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full cursor-pointer"
             />
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded">
