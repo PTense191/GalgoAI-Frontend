@@ -158,6 +158,17 @@ export default function Home() {
             session_id: selectedSession,
           }),
         });
+
+        setHistoryData((prev) => [
+         ...prev,
+        {
+          user_email: session.user.email,
+          mensaje_usuario: text,
+          respuesta_asistente: respuesta,
+          timestamp: new Date().toISOString(),
+          session_id: selectedSession,
+        },
+      ]);
       }
     } catch (err) {
       console.error(err);
