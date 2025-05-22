@@ -20,77 +20,98 @@ export default function Home() {
 
   // Cargar historial al autenticarse
   useEffect(() => {
-  if (status !== "authenticated") return;
+    if (status !== "authenticated") return;
 
-  fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
-    .then(res => res.json())
-    .then(data => {
-      setHistoryData(data);
-      const uniq = Array.from(new Set(data.map(e => e.session_id)));
-      setSessions(uniq);
-        const last = localStorage.getItem("last_session") || uniq[uniq.length - 1];
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`,
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setHistoryData(data);
+        const uniq = Array.from(new Set(data.map((e) => e.session_id)));
+        setSessions(uniq);
+
+        const last =
+          localStorage.getItem("last_session") || uniq[uniq.length - 1];
         setSelectedSession(last || "");
 
-      // Intentar cargar desde localStorage
-      const local = localStorage.getItem("chat_" + last);
-      if (local) {
-        setMessages(JSON.parse(local));
-        return;
-      }
+        // Intentar cargar desde localStorage
+        const local = localStorage.getItem("chat_" + last);
+        if (local) {
+          setMessages(JSON.parse(local));
+          return;
+        }
 
-      if (last) {
-        const msgs = data
-          .filter(e => e.session_id === last)
-          .flatMap(e => {
-            const time = new Date().toLocaleTimeString();
-            return [
-              { sender: "user", text: e.mensaje_usuario, timestamp: time },
-              { sender: "bot", text: e.respuesta_asistente, timestamp: time }
-            ];
-          });
-        setMessages(msgs);
-      } else {
-        setMessages([
-          { sender: "bot", text: "¡Hola! ¿En qué puedo ayudarte hoy?", timestamp: new Date().toLocaleTimeString() }
-        ]);
-      }
-    })
-    .catch(console.error);
-}, [status, session]);
+        if (last) {
+          const msgs = data
+            .filter((e) => e.session_id === last)
+            .flatMap((e) => {
+              const userMsg = e.mensaje_usuario?.trim();
+              const botMsg = e.respuesta_asistente?.trim();
+              const time = new Date().toLocaleTimeString();
+              const pair = [];
 
+              if (userMsg)
+                pair.push({ sender: "user", text: userMsg, timestamp: time });
+              if (botMsg)
+                pair.push({ sender: "bot", text: botMsg, timestamp: time });
+
+              return pair;
+            });
+          setMessages(msgs);
+        } else {
+          setMessages([
+            {
+              sender: "bot",
+              text: "¡Hola! ¿En qué puedo ayudarte hoy?",
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ]);
+        }
+      })
+      .catch(console.error);
+  }, [status, session]);
 
   // Seleccionar sesión
-  const selectSession = id => {
-  setSelectedSession(id);
-  localStorage.setItem("last_session", id);
+  const selectSession = (id) => {
+    setSelectedSession(id);
+    localStorage.setItem("last_session", id);
 
-  const local = localStorage.getItem("chat_" + id);
-  if (local) {
-    setMessages(JSON.parse(local));
-    return;
-  }
+    const local = localStorage.getItem("chat_" + id);
+    if (local) {
+      setMessages(JSON.parse(local));
+      return;
+    }
 
-  const msgs = historyData
-    .filter(e => e.session_id === id)
-    .flatMap(e => {
-      const userMsg = e.mensaje_usuario?.trim();
-      const botMsg = e.respuesta_asistente?.trim();
-      const time = new Date().toLocaleTimeString();
-      const pair = [];
+    const msgs = historyData
+      .filter((e) => e.session_id === id)
+      .flatMap((e) => {
+        const userMsg = e.mensaje_usuario?.trim();
+        const botMsg = e.respuesta_asistente?.trim();
+        const time = new Date().toLocaleTimeString();
+        const pair = [];
 
-      if (userMsg) pair.push({ sender: "user", text: userMsg, timestamp: time });
-      if (botMsg) pair.push({ sender: "bot", text: botMsg, timestamp: time });
+        if (userMsg)
+          pair.push({ sender: "user", text: userMsg, timestamp: time });
+        if (botMsg) pair.push({ sender: "bot", text: botMsg, timestamp: time });
 
-      return pair;
-  });
+        return pair;
+      });
 
+    setMessages(msgs);
+  };
   // Nuevo chat
   const newChat = () => {
     const id = `${session.user.email}_${Date.now()}`;
-    setSessions(prev => [...prev, id]);
+    setSessions((prev) => [...prev, id]);
     setSelectedSession(id);
+    localStorage.setItem("last_session", id);
     setMessages([
-      { sender: "bot", text: "¡Hola! ¿En qué puedo ayudarte hoy?", timestamp: new Date().toLocaleTimeString() }
+      {
+        sender: "bot",
+        text: "¡Hola! ¿En qué puedo ayudarte hoy?",
+        timestamp: new Date().toLocaleTimeString(),
+      },
     ]);
   };
 
@@ -107,21 +128,25 @@ export default function Home() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensajes: updated })
+        body: JSON.stringify({ mensajes: updated }),
       });
       const { respuesta } = await res.json();
       if (respuesta) {
-        const botMsg = { sender: "bot", text: respuesta, timestamp: new Date().toLocaleTimeString() };
-        setMessages(prev => [...prev, botMsg]);
+        const botMsg = {
+          sender: "bot",
+          text: respuesta,
+          timestamp: new Date().toLocaleTimeString(),
+        };
+        setMessages((prev) => [...prev, botMsg]);
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            user_email:          session.user.email,
-            mensaje_usuario:     text,
+            user_email: session.user.email,
+            mensaje_usuario: text,
             respuesta_asistente: respuesta,
-            session_id:          selectedSession
-          })
+            session_id: selectedSession,
+          }),
         });
       }
     } catch (err) {
@@ -134,14 +159,14 @@ export default function Home() {
     if (containerRef.current) {
       containerRef.current.scrollTo({
         top: containerRef.current.scrollHeight,
-        behavior: "smooth"
+        behavior: "smooth",
       });
     }
   }, [messages]);
 
   useEffect(() => {
     if (selectedSession && messages.length > 0) {
-     localStorage.setItem("chat_" + selectedSession, JSON.stringify(messages));
+      localStorage.setItem("chat_" + selectedSession, JSON.stringify(messages));
     }
   }, [messages, selectedSession]);
 
@@ -157,20 +182,22 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <div className="p-8 bg-white rounded-lg shadow-lg text-center">
-          <h1 className="text-2xl font-bold mb-4 font-pixel uppercase text-4xl">GALGOAI CHAT</h1>
+          <h1 className="text-2xl font-bold mb-4 font-pixel uppercase text-4xl">
+            GALGOAI CHAT
+          </h1>
           <div className="flex justify-center mb-6">
-              <div className="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                <Image
-                  src="/bot.png"
-                  width={128}
-                  height={128}
-                  alt="GalgoAI Logo"
-                  className="object-contain"
-                />
-              </div>
+            <div className="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+              <Image
+                src="/bot.png"
+                width={128}
+                height={128}
+                alt="GalgoAI Logo"
+                className="object-contain"
+              />
             </div>
+          </div>
           <button
-            onClick={() => signIn("google", {prompt: "select_account"})}
+            onClick={() => signIn("google", { prompt: "select_account" })}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
           >
             Iniciar Sesión con Google
@@ -180,7 +207,15 @@ export default function Home() {
     );
   }
 
-  const filtered = sessions.filter(id => id.includes(searchTerm));
+  const filtered = sessions
+    .filter((id) => {
+      const local = localStorage.getItem("chat_" + id);
+      return (
+        local ||
+        historyData.find((e) => e.session_id === id)?.mensaje_usuario?.trim()
+      );
+    })
+    .filter((id) => id.includes(searchTerm));
 
   return (
     <main className="flex h-screen">
@@ -190,7 +225,7 @@ export default function Home() {
           type="text"
           placeholder="Buscar chat..."
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="mb-4 p-2 border rounded focus:ring"
         />
         <button
@@ -199,12 +234,12 @@ export default function Home() {
         >
           + Nuevo chat
         </button>
-        {filtered.map(id => {
-          const first = historyData.find(e => e.session_id === id);
+        {filtered.map((id) => {
+          const first = historyData.find((e) => e.session_id === id);
           const mensaje = first?.mensaje_usuario?.trim();
           const snippet = mensaje
-          ? mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "")
-          : "Chat sin título";
+            ? mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "")
+            : "Chat sin título";
           return (
             <div
               key={id}
@@ -213,9 +248,11 @@ export default function Home() {
             >
               <p className="font-medium">{snippet || id.split("_").pop()}</p>
               <p className="text-xs text-gray-500 mt-1">
-                const fechaTexto = /^\d+$/.test(id.split("_").pop())
-                  ? new Date(Number(id.split("_").pop())).toLocaleDateString("es-MX")
-                  : id.split("_").pop(); // dejar texto tal cual si no es timestamp
+                {/^\d+$/.test(id.split("_").pop())
+                  ? new Date(Number(id.split("_").pop())).toLocaleDateString(
+                      "es-MX",
+                    )
+                  : id.split("_").pop()}
               </p>
             </div>
           );
@@ -249,7 +286,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     localStorage.clear();
-                    signOut({ callbackUrl: window.location.origin }); 
+                    signOut({ callbackUrl: window.location.origin });
                   }}
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
                 >
@@ -279,9 +316,17 @@ export default function Home() {
                 key={i}
                 className={`mb-4 flex ${isUser ? "justify-end" : "justify-start"}`}
               >
-                <div className={`flex items-center ${isUser ? "flex-row-reverse" : ""}`}>
+                <div
+                  className={`flex items-center ${isUser ? "flex-row-reverse" : ""}`}
+                >
                   {/* Avatar */}
-                  <div className={isUser ? "mx-2 flex-shrink-0" : "bg-white p-1 rounded-full mx-2 flex-shrink-0"}>
+                  <div
+                    className={
+                      isUser
+                        ? "mx-2 flex-shrink-0"
+                        : "bg-white p-1 rounded-full mx-2 flex-shrink-0"
+                    }
+                  >
                     <img
                       src={avatarSrc}
                       alt={isUser ? "Tu perfil" : "Bot Galgo"}
@@ -314,7 +359,7 @@ export default function Home() {
           <textarea
             ref={inputRef}
             rows={2}
-            onKeyDown={e => {
+            onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
