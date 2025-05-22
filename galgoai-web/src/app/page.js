@@ -427,7 +427,7 @@ export default function Home() {
                             fetch(
                               `${process.env.NEXT_PUBLIC_API_URL}/titulos`,
                               {
-                                method: "POST",
+                                method: "PUT",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
                                   session_id: id,
