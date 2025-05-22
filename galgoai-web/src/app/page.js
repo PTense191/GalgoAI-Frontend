@@ -22,6 +22,8 @@ export default function Home() {
   const inputRef = useRef(null);
   const menuRefs = useRef({});
 
+  const [titles, setTitles] = useState({});
+
   // Cargar historial al autenticarse
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -32,6 +34,21 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setHistoryData(data);
+
+        // Obtener títulos personalizados
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/titulos?email=${session.user.email}`,
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            const map = {};
+            data.forEach(({ session_id, titulo }) => {
+              map[session_id] = titulo;
+            });
+            setTitles(map);
+          })
+          .catch(console.error);
+
         const uniq = Array.from(new Set(data.map((e) => e.session_id)));
         setSessions(uniq);
 
@@ -253,10 +270,25 @@ export default function Home() {
                     onChange={(e) => setEditedTitle(e.target.value)}
                     onBlur={() => {
                       if (editedTitle.trim()) {
-                        localStorage.setItem(
-                          `chat_title_${id}`,
-                          editedTitle.trim(),
-                        );
+                        const nuevoTitulo = editedTitle.trim();
+
+                        // Actualiza en Supabase
+                        fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            session_id: id,
+                            titulo: nuevoTitulo,
+                            user_email: session.user.email,
+                          }),
+                        })
+                          .then(() => {
+                            setTitles((prev) => ({
+                              ...prev,
+                              [id]: nuevoTitulo,
+                            }));
+                          })
+                          .catch(console.error);
                       }
                       setEditingId(null);
                     }}
@@ -270,9 +302,7 @@ export default function Home() {
                 ) : (
                   <>
                     <p className="font-medium">
-                      {localStorage.getItem(`chat_title_${id}`) ||
-                        snippet ||
-                        id.split("_").pop()}
+                      {titles[id] || snippet || id.split("_").pop()}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {/^\d+$/.test(id.split("_").pop())
@@ -331,6 +361,29 @@ export default function Home() {
                           setMessages([]);
                         }
                         setOpenMenuId(null);
+
+                        // Eliminar título de Supabase si existe
+                        fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            session_id: id,
+                            user_email: session.user.email,
+                          }),
+                        }).catch(console.error);
+
+                        // Eliminar historial de conversación
+                        fetch(
+                          `${process.env.NEXT_PUBLIC_API_URL}/conversaciones`,
+                          {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              session_id: id,
+                              user_email: session.user.email,
+                            }),
+                          },
+                        ).catch(console.error);
                       }
                     }}
                     className="w-full text-left px-3 py-2 hover:bg-red-100 text-sm text-red-600"
