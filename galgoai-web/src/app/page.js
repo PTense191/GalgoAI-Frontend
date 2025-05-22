@@ -222,6 +222,13 @@ export default function Home() {
         const historial = await historialRes.json();
         const titulos = await titulosRes.json();
 
+        // Guardar títulos personalizados en estado
+        const titles = {};
+        titulos.forEach(({ session_id, titulo }) => {
+          titles[session_id] = titulo;
+        });
+        setCustomTitles(titles);
+
         // Guardar historial de conversaciones
         setHistoryData(historial);
 
