@@ -83,7 +83,7 @@ export default function Home() {
   };
 
   // Nuevo chat
-  const newChat = () => {
+  const newChat = async () => {
     const id = `${session.user.email}_${Date.now()}`;
     setSessions((prev) => [...prev, id]);
     setSelectedSession(id);
@@ -94,6 +94,22 @@ export default function Home() {
         timestamp: new Date().toLocaleTimeString(),
       },
     ]);
+
+    // Registrar el nuevo chat con un título por defecto
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: id,
+        titulo: "Chat sin título",
+        user_email: session.user.email,
+      }),
+    });
+
+    setCustomTitles((prev) => ({
+      ...prev,
+      [id]: "Chat sin título",
+    }));
   };
 
   // Enviar mensaje
@@ -103,6 +119,7 @@ export default function Home() {
     const time = new Date().toLocaleTimeString();
     let currentSession = selectedSession;
     if (!currentSession) {
+      // Sesión nueva sin ID, así que registramos el título por primera vez
       currentSession = `${session.user.email}_${Date.now()}`;
       setSelectedSession(currentSession);
       setSessions((prev) => [...prev, currentSession]);
@@ -112,15 +129,38 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id: currentSession,
-          titulo: text.slice(0, 20), // primer mensaje como título
+          titulo: "Chat sin título",
           user_email: session.user.email,
         }),
       });
+
+      setCustomTitles((prev) => ({
+        ...prev,
+        [currentSession]: "Chat sin título",
+      }));
     }
 
     const updated = [...messages, { sender: "user", text, timestamp: time }];
     setMessages(updated);
     inputRef.current.value = "";
+
+    // Si el título actual es "Chat sin título", lo actualizamos con el primer mensaje
+    if (customTitles[currentSession] === "Chat sin título") {
+      const nuevoTitulo = text.slice(0, 20);
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: currentSession,
+          titulo: nuevoTitulo,
+          user_email: session.user.email,
+        }),
+      });
+      setCustomTitles((prev) => ({
+        ...prev,
+        [currentSession]: nuevoTitulo,
+      }));
+    }
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
