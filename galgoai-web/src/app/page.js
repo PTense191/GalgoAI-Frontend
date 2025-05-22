@@ -95,8 +95,6 @@ export default function Home() {
 
   const newChat = async () => {
     const id = `${session.user.email}_${Date.now()}`;
-    setSessions((prev) => [...prev, id]);
-    setSelectedSession(id);
 
     const mensajeInicial = {
       sender: "bot",
@@ -104,9 +102,6 @@ export default function Home() {
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    setMessages([mensajeInicial]);
-
-    // Guardar el título por defecto
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,22 +112,24 @@ export default function Home() {
       }),
     });
 
-    setCustomTitles((prev) => ({
-      ...prev,
-      [id]: "Chat sin título",
-    }));
-
-    // Guardar el mensaje inicial en el historial
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_email: session.user.email,
-        mensaje_usuario: "", // aún no hay input del usuario
+        mensaje_usuario: "",
         respuesta_asistente: mensajeInicial.text,
         session_id: id,
       }),
     });
+
+    setCustomTitles((prev) => ({
+      ...prev,
+      [id]: "Chat sin título",
+    }));
+    setSessions((prev) => [...prev, id]);
+    setSelectedSession(id);
+    setMessages([mensajeInicial]);
   };
 
   // Enviar mensaje
@@ -368,17 +365,15 @@ export default function Home() {
     );
   }
 
-  const filtered = sessions.filter((id) => id.includes(searchTerm));
+  const filtered = sessions.filter((id) =>
+    (customTitles[id] || id).toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <main className="relative h-screen">
       {/* Sidebar */}
       <aside
-        className={`
-    fixed top-0 left-0 h-full bg-gray-100 p-4 overflow-y-auto overflow-x-hidden z-40
-    transition-all duration-300 ease-in-out
-    ${sidebarOpen ? "w-1/4" : "w-0"}
-  `}
+        className={`fixed top-0 left-0 h-full z-40 transition-transform transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} w-64 bg-gray-100 p-4`}
       >
         {sidebarOpen && (
           <>
@@ -388,12 +383,22 @@ export default function Home() {
             >
               + Nuevo chat
             </button>
+
+            <input
+              type="text"
+              placeholder="Buscar chat..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-4 p-2 border rounded focus:ring w-full"
+            />
             {filtered.map((id) => {
               const first = historyData.find((e) => e.session_id === id);
               const snippet =
                 customTitles[id] ||
-                first?.mensaje_usuario.slice(0, 20) +
-                  (first?.mensaje_usuario.length > 20 ? "…" : "");
+                (first?.mensaje_usuario
+                  ? first.mensaje_usuario.slice(0, 20) +
+                    (first.mensaje_usuario.length > 20 ? "…" : "")
+                  : id.split("_").pop());
               if (!id) return null;
               return (
                 <div
@@ -545,7 +550,7 @@ export default function Home() {
       {/* Overlay que se muestra detrás del sidebar */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-40 z-30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
