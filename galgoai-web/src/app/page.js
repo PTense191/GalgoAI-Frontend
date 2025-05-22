@@ -87,7 +87,7 @@ export default function Home() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensajes: updated.map(m => m.text) })
+        body: JSON.stringify({ mensajes: updated })
       });
       const { respuesta } = await res.json();
       if (respuesta) {
