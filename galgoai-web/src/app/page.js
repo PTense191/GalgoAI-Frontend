@@ -382,10 +382,6 @@ export default function Home() {
       >
         {sidebarOpen && (
           <>
-            <div
-              className="fixed inset-0 bg-black bg-opacity-40 z-30"
-              onClick={() => setSidebarOpen(false)}
-            />
             <button
               onClick={newChat}
               className="mb-4 px-4 py-2 bg-white rounded shadow hover:shadow-md transition-shadow"
