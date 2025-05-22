@@ -70,6 +70,7 @@ export default function Home() {
   // Seleccionar sesión
   const selectSession = (id) => {
     setSelectedSession(id);
+    setSidebarOpen(false); // <-- cerrar sidebar al seleccionar
     const msgs = historyData
       .filter((e) => e.session_id === id)
       .flatMap((e) => {
@@ -80,17 +81,17 @@ export default function Home() {
         ];
       });
 
-    if (msgs.length > 0) {
-      setMessages(msgs);
-    } else {
-      setMessages([
-        {
-          sender: "bot",
-          text: "¡Hola! ¿En qué puedo ayudarte hoy?",
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ]);
-    }
+    setMessages(
+      msgs.length > 0
+        ? msgs
+        : [
+            {
+              sender: "bot",
+              text: "¡Hola! ¿En qué puedo ayudarte hoy?",
+              timestamp: new Date().toLocaleTimeString(),
+            },
+          ],
+    );
   };
 
   const newChat = async () => {
@@ -550,7 +551,7 @@ export default function Home() {
       {/* Overlay que se muestra detrás del sidebar */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30"
+          className="fixed inset-0 z-30 bg-black bg-opacity-40 transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
