@@ -41,7 +41,8 @@ export default function Home() {
         setHistoryData(data);
         const uniq = Array.from(new Set(data.map((e) => e.session_id)));
         setSessions(uniq);
-        const last = uniq[uniq.length - 1];
+        const last =
+          localStorage.getItem("last_session") || uniq[uniq.length - 1];
         setSelectedSession(last || "");
         if (last) {
           const msgs = data
@@ -264,8 +265,13 @@ export default function Home() {
 
         setSessions(ordenadas);
 
-        // Seleccionar último o mantener el actual
-        const last = ordenadas[0];
+        // Recuperar la última sesión activa desde localStorage si existe y es válida
+        const lastStored = localStorage.getItem("last_session");
+        const last =
+          ordenadas.includes(lastStored) && lastStored
+            ? lastStored
+            : ordenadas[0];
+
         setSelectedSession(last || "");
 
         // Mostrar mensajes si hay historial
@@ -328,6 +334,12 @@ export default function Home() {
       });
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (selectedSession) {
+      localStorage.setItem("last_session", selectedSession);
+    }
+  }, [selectedSession]);
 
   // Mientras NextAuth valida
   if (loadingSession) {
@@ -531,6 +543,11 @@ export default function Home() {
                               setSessions((prev) =>
                                 prev.filter((sid) => sid !== id),
                               );
+                              if (selectedSession === id) {
+                                localStorage.removeItem("last_session");
+                                setSelectedSession("");
+                                setMessages([]);
+                              }
                               setMenuSessionId(null);
                             });
                           }
