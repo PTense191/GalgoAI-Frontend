@@ -208,28 +208,97 @@ export default function Home() {
   useEffect(() => {
     if (status !== "authenticated") return;
 
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/titulos?email=${session.user.email}`,
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        const titles = {};
-        data.forEach(({ session_id, titulo }) => {
-          titles[session_id] = titulo;
+    const cargarDatos = async () => {
+      try {
+        const [historialRes, titulosRes] = await Promise.all([
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`,
+          ),
+          fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/titulos?email=${session.user.email}`,
+          ),
+        ]);
+
+        const historial = await historialRes.json();
+        const titulos = await titulosRes.json();
+
+        // Guardar historial de conversaciones
+        setHistoryData(historial);
+
+        // Unimos historial y títulos con prioridad de títulos para orden
+        const sesionesConFecha = titulos.map(({ session_id, creado_en }) => ({
+          session_id,
+          creado_en: new Date(creado_en),
+        }));
+
+        // Agrega sesiones que existan solo en historial y no en títulos
+        historial.forEach(({ session_id }) => {
+          if (!sesionesConFecha.find((s) => s.session_id === session_id)) {
+            sesionesConFecha.push({
+              session_id,
+              creado_en: new Date(0), // muy antiguo para que quede al final
+            });
+          }
         });
-        setCustomTitles(titles);
-      })
-      .catch(console.error);
+
+        // Ordenar por fecha descendente
+        const ordenadas = sesionesConFecha
+          .sort((a, b) => b.creado_en - a.creado_en)
+          .map((s) => s.session_id);
+
+        setSessions(ordenadas);
+
+        // Seleccionar último o mantener el actual
+        const last = ordenadas[0];
+        setSelectedSession(last || "");
+
+        // Mostrar mensajes si hay historial
+        if (last) {
+          const msgs = historial
+            .filter((e) => e.session_id === last)
+            .flatMap((e) => {
+              const time = new Date().toLocaleTimeString();
+              return [
+                { sender: "user", text: e.mensaje_usuario, timestamp: time },
+                { sender: "bot", text: e.respuesta_asistente, timestamp: time },
+              ];
+            });
+
+          if (msgs.length > 0) {
+            setMessages(msgs);
+          } else {
+            setMessages([
+              {
+                sender: "bot",
+                text: "¡Hola! ¿En qué puedo ayudarte hoy?",
+                timestamp: new Date().toLocaleTimeString(),
+              },
+            ]);
+          }
+        }
+      } catch (err) {
+        console.error("Error al cargar historial y títulos:", err);
+      }
+    };
+
+    cargarDatos();
   }, [status, session]);
 
   //Click fuera del icono "..."
   useEffect(() => {
     const handleClickOutside = (e) => {
-      const menu = document.getElementById("session-menu");
-      if (menu && !menu.contains(e.target)) {
+      const menus = document.querySelectorAll('[id^="session-menu-"]');
+      let clickedInsideAnyMenu = false;
+
+      menus.forEach((menu) => {
+        if (menu.contains(e.target)) clickedInsideAnyMenu = true;
+      });
+
+      if (!clickedInsideAnyMenu) {
         setMenuSessionId(null);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -259,7 +328,17 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <div className="p-8 bg-white rounded-lg shadow-lg text-center">
           <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
-          <p className="mb-4">Inicia sesión con tu correo institucional</p>
+          <div className="flex justify-center mb-6">
+            <div className="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+              <Image
+                src="/bot.png"
+                width={128}
+                height={128}
+                alt="GalgoAI Logo"
+                className="object-contain"
+              />
+            </div>
+          </div>
           <button
             onClick={() => signIn("google")}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
