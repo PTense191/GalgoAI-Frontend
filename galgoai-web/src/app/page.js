@@ -550,7 +550,10 @@ export default function Home() {
 
       {/* Overlay que se muestra detrás del sidebar */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-10 bg-black/30 pointer-events-auto" onClick={() => setSidebarOpen(false)} />
+        <div
+          className="fixed inset-0 z-10 bg-black/30 pointer-events-auto"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
       {/* Chat area */}
@@ -588,7 +591,7 @@ export default function Home() {
           </div>
 
           {/* Título centrado */}
-          <h1 className="absolute left-1/2 transform -translate-x-1/2 uppercase font-bold text-4xl md:text-5xl font-pixel">
+          <h1 className="absolute left-1/2 transform -translate-x-1/2 uppercase font-bold text-xl sm:text-2xl md:text-4xl lg:text-5xl font-pixel">
             GALGOAI CHAT
           </h1>
 
