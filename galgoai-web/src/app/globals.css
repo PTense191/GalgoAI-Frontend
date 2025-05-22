@@ -31,10 +31,10 @@
 }
 
 /* 5. Modo oscuro */
-@media (prefers-color-scheme: dark) { 
+@media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a; 
-    --foreground: #171717; 
+    --background: #0a0a0a;
+    --foreground: #171717;
   }
 }
 

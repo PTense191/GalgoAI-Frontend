@@ -15,14 +15,17 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuSessionId, setMenuSessionId] = useState(null);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
   // Cargar historial al autenticarse
   useEffect(() => {
     if (status !== "authenticated") return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`,
+    )
       .then((res) => res.json())
       .then((data) => {
         setHistoryData(data);
@@ -122,6 +125,18 @@ export default function Home() {
     }
   };
 
+  //Click fuera del icono "..."
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const menu = document.getElementById("session-menu");
+      if (menu && !menu.contains(e.target)) {
+        setMenuSessionId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Auto-scroll
   useEffect(() => {
     if (containerRef.current) {
@@ -195,12 +210,106 @@ export default function Home() {
                 <div
                   key={id}
                   onClick={() => selectSession(id)}
-                  className="mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors cursor-pointer"
+                  className="mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors cursor-pointer relative"
                 >
-                  <p className="font-medium">{snippet || id.split("_").pop()}</p>
+                  <p className="font-medium">
+                    {snippet || id.split("_").pop()}
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {new Date(Number(id.split("_").pop())).toLocaleDateString()}
                   </p>
+
+                  <button
+                    className="absolute top-1 right-2 text-lg font-bold text-gray-500 hover:text-black cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuSessionId((prev) => (prev === id ? null : id));
+                    }}
+                  >
+                    …
+                  </button>
+
+                  {menuSessionId === id && (
+                    <div
+                      id="session-menu"
+                      className="absolute right-2 top-7 w-32 bg-white border rounded shadow-md z-10"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const nuevo = prompt("Nuevo título:");
+                          if (nuevo) {
+                            fetch(
+                              `${process.env.NEXT_PUBLIC_API_URL}/titulos`,
+                              {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  session_id: id,
+                                  titulo: nuevo,
+                                  user_email: session.user.email,
+                                }),
+                              },
+                            ).then(() => {
+                              // Refrescar los títulos locales si los estás usando
+                              setMenuSessionId(null);
+                            });
+                          }
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                      >
+                        Renombrar
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            confirm("¿Seguro que deseas eliminar este chat?")
+                          ) {
+                            Promise.all([
+                              fetch(
+                                `${process.env.NEXT_PUBLIC_API_URL}/titulos`,
+                                {
+                                  method: "DELETE",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    session_id: id,
+                                    user_email: session.user.email,
+                                  }),
+                                },
+                              ),
+                              fetch(
+                                `${process.env.NEXT_PUBLIC_API_URL}/conversaciones`,
+                                {
+                                  method: "DELETE",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    session_id: id,
+                                    user_email: session.user.email,
+                                  }),
+                                },
+                              ),
+                            ]).then(() => {
+                              setHistoryData((prev) =>
+                                prev.filter((e) => e.session_id !== id),
+                              );
+                              setSessions((prev) =>
+                                prev.filter((sid) => sid !== id),
+                              );
+                              setMenuSessionId(null);
+                            });
+                          }
+                        }}
+                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-100"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -216,7 +325,7 @@ export default function Home() {
           <div className="flex items-center">
             <button
               onClick={() => setSidebarOpen((o) => !o)}
-              className="p-2 mr-4 text-white focus:outline-none"
+              className="p-2 mr-4 text-white focus:outline-none hover:cursor-pointer"
             >
               <svg
                 className="w-6 h-6"
