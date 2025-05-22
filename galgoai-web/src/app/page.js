@@ -374,7 +374,7 @@ export default function Home() {
     <main className="relative h-screen">
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full z-40 transition-transform transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} w-64 bg-gray-100 p-4`}
+        className={`fixed top-0 left-0 h-full z-[60] transition-transform transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} w-64 bg-gray-100 p-4`}
       >
         {sidebarOpen && (
           <>
