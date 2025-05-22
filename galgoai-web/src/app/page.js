@@ -73,14 +73,16 @@ export default function Home() {
   const msgs = historyData
     .filter(e => e.session_id === id)
     .flatMap(e => {
+      const userMsg = e.mensaje_usuario?.trim();
+      const botMsg = e.respuesta_asistente?.trim();
       const time = new Date().toLocaleTimeString();
-      return [
-        { sender: "user", text: e.mensaje_usuario, timestamp: time },
-        { sender: "bot", text: e.respuesta_asistente, timestamp: time }
-      ];
-    });
-  setMessages(msgs);
-};
+      const pair = [];
+
+      if (userMsg) pair.push({ sender: "user", text: userMsg, timestamp: time });
+      if (botMsg) pair.push({ sender: "bot", text: botMsg, timestamp: time });
+
+      return pair;
+  });
 
   // Nuevo chat
   const newChat = () => {
@@ -199,8 +201,10 @@ export default function Home() {
         </button>
         {filtered.map(id => {
           const first = historyData.find(e => e.session_id === id);
-          const mensaje = first?.mensaje_usuario || "";
-          const snippet = mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "");
+          const mensaje = first?.mensaje_usuario?.trim();
+          const snippet = mensaje
+          ? mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "")
+          : "Chat sin título";
           return (
             <div
               key={id}
@@ -209,7 +213,9 @@ export default function Home() {
             >
               <p className="font-medium">{snippet || id.split("_").pop()}</p>
               <p className="text-xs text-gray-500 mt-1">
-                {new Date(Number(id.split("_").pop())).toLocaleDateString()}
+                const fechaTexto = /^\d+$/.test(id.split("_").pop())
+                  ? new Date(Number(id.split("_").pop())).toLocaleDateString("es-MX")
+                  : id.split("_").pop(); // dejar texto tal cual si no es timestamp
               </p>
             </div>
           );
