@@ -20,49 +20,67 @@ export default function Home() {
 
   // Cargar historial al autenticarse
   useEffect(() => {
-    if (status !== "authenticated") return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
-      .then(res => res.json())
-      .then(data => {
-        setHistoryData(data);
-        const uniq = Array.from(new Set(data.map(e => e.session_id)));
-        setSessions(uniq);
-        const last = uniq[uniq.length - 1];
+  if (status !== "authenticated") return;
+
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
+    .then(res => res.json())
+    .then(data => {
+      setHistoryData(data);
+      const uniq = Array.from(new Set(data.map(e => e.session_id)));
+      setSessions(uniq);
+        const last = localStorage.getItem("last_session") || uniq[uniq.length - 1];
         setSelectedSession(last || "");
-        if (last) {
-          const msgs = data
-            .filter(e => e.session_id === last)
-            .flatMap(e => {
-              const time = new Date().toLocaleTimeString();
-              return [
-                { sender: "user", text: e.mensaje_usuario,    timestamp: time },
-                { sender: "bot",  text: e.respuesta_asistente, timestamp: time }
-              ];
-            });
-          setMessages(msgs);
-        } else {
-          setMessages([
-            { sender: "bot", text: "¡Hola! ¿En qué puedo ayudarte hoy?", timestamp: new Date().toLocaleTimeString() }
-          ]);
-        }
-      })
-      .catch(console.error);
-  }, [status, session]);
+
+      // Intentar cargar desde localStorage
+      const local = localStorage.getItem("chat_" + last);
+      if (local) {
+        setMessages(JSON.parse(local));
+        return;
+      }
+
+      if (last) {
+        const msgs = data
+          .filter(e => e.session_id === last)
+          .flatMap(e => {
+            const time = new Date().toLocaleTimeString();
+            return [
+              { sender: "user", text: e.mensaje_usuario, timestamp: time },
+              { sender: "bot", text: e.respuesta_asistente, timestamp: time }
+            ];
+          });
+        setMessages(msgs);
+      } else {
+        setMessages([
+          { sender: "bot", text: "¡Hola! ¿En qué puedo ayudarte hoy?", timestamp: new Date().toLocaleTimeString() }
+        ]);
+      }
+    })
+    .catch(console.error);
+}, [status, session]);
+
 
   // Seleccionar sesión
   const selectSession = id => {
-    setSelectedSession(id);
-    const msgs = historyData
-      .filter(e => e.session_id === id)
-      .flatMap(e => {
-        const time = new Date().toLocaleTimeString();
-        return [
-          { sender: "user", text: e.mensaje_usuario,    timestamp: time },
-          { sender: "bot",  text: e.respuesta_asistente, timestamp: time }
-        ];
-      });
-    setMessages(msgs);
-  };
+  setSelectedSession(id);
+  localStorage.setItem("last_session", id);
+
+  const local = localStorage.getItem("chat_" + id);
+  if (local) {
+    setMessages(JSON.parse(local));
+    return;
+  }
+
+  const msgs = historyData
+    .filter(e => e.session_id === id)
+    .flatMap(e => {
+      const time = new Date().toLocaleTimeString();
+      return [
+        { sender: "user", text: e.mensaje_usuario, timestamp: time },
+        { sender: "bot", text: e.respuesta_asistente, timestamp: time }
+      ];
+    });
+  setMessages(msgs);
+};
 
   // Nuevo chat
   const newChat = () => {
@@ -118,6 +136,12 @@ export default function Home() {
       });
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (selectedSession && messages.length > 0) {
+     localStorage.setItem("chat_" + selectedSession, JSON.stringify(messages));
+    }
+  }, [messages, selectedSession]);
 
   // Validación de sesión
   if (loadingSession) {
@@ -217,7 +241,10 @@ export default function Home() {
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded">
                 <button
-                  onClick={() => signOut({ callbackUrl: window.location.origin })}
+                  onClick={() => {
+                    localStorage.clear();
+                    signOut({ callbackUrl: window.location.origin }); 
+                  }}
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
                 >
                   Cerrar sesión
