@@ -15,70 +15,31 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [openMenuId, setOpenMenuId] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [editedTitle, setEditedTitle] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const containerRef = useRef(null);
   const inputRef = useRef(null);
-  const menuRefs = useRef({});
-
-  const [titles, setTitles] = useState({});
 
   // Cargar historial al autenticarse
   useEffect(() => {
     if (status !== "authenticated") return;
-
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`,
-    )
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial?email=${session.user.email}`)
       .then((res) => res.json())
       .then((data) => {
         setHistoryData(data);
-
-        // Obtener títulos personalizados
-        fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/titulos?email=${session.user.email}`,
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            const map = {};
-            data.forEach(({ session_id, titulo }) => {
-              map[session_id] = titulo;
-            });
-            setTitles(map);
-          })
-          .catch(console.error);
-
         const uniq = Array.from(new Set(data.map((e) => e.session_id)));
-        uniq.sort((a, b) => {
-          const tA = new Date(data.find(e => e.session_id === a)?.timestamp || 0).getTime();
-          const tB = new Date(data.find(e => e.session_id === b)?.timestamp || 0).getTime();
-          return tB - tA;
-        });
         setSessions(uniq);
-
-        const last =
-          localStorage.getItem("last_session") || uniq[uniq.length - 1];
+        const last = uniq[uniq.length - 1];
         setSelectedSession(last || "");
-
-        // Intentar cargar desde localStorage
         if (last) {
           const msgs = data
             .filter((e) => e.session_id === last)
             .flatMap((e) => {
-              const userMsg = e.mensaje_usuario?.trim();
-              const botMsg = e.respuesta_asistente?.trim();
-              const time = new Date(e.timestamp).toLocaleTimeString();
-              const pair = [];
-
-              if (userMsg)
-                pair.push({ sender: "user", text: userMsg, timestamp: time });
-              if (botMsg)
-                pair.push({ sender: "bot", text: botMsg, timestamp: time });
-
-              return pair;
+              const time = new Date().toLocaleTimeString();
+              return [
+                { sender: "user", text: e.mensaje_usuario, timestamp: time },
+                { sender: "bot", text: e.respuesta_asistente, timestamp: time },
+              ];
             });
-
           setMessages(msgs);
         } else {
           setMessages([
@@ -96,31 +57,23 @@ export default function Home() {
   // Seleccionar sesión
   const selectSession = (id) => {
     setSelectedSession(id);
-    localStorage.setItem("last_session", id);
-
     const msgs = historyData
       .filter((e) => e.session_id === id)
       .flatMap((e) => {
-        const userMsg = e.mensaje_usuario?.trim();
-        const botMsg = e.respuesta_asistente?.trim();
-        const time = new Date(e.timestamp).toLocaleTimeString();
-        const pair = [];
-
-        if (userMsg)
-          pair.push({ sender: "user", text: userMsg, timestamp: time });
-        if (botMsg) pair.push({ sender: "bot", text: botMsg, timestamp: time });
-
-        return pair;
+        const time = new Date().toLocaleTimeString();
+        return [
+          { sender: "user", text: e.mensaje_usuario, timestamp: time },
+          { sender: "bot", text: e.respuesta_asistente, timestamp: time },
+        ];
       });
-
     setMessages(msgs);
   };
+
   // Nuevo chat
   const newChat = () => {
     const id = `${session.user.email}_${Date.now()}`;
     setSessions((prev) => [...prev, id]);
     setSelectedSession(id);
-    localStorage.setItem("last_session", id);
     setMessages([
       {
         sender: "bot",
@@ -143,7 +96,7 @@ export default function Home() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/consultar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensajes: updated }),
+        body: JSON.stringify({ mensajes: updated.map((m) => m.text) }),
       });
       const { respuesta } = await res.json();
       if (respuesta) {
@@ -163,17 +116,6 @@ export default function Home() {
             session_id: selectedSession,
           }),
         });
-
-        setHistoryData((prev) => [
-         ...prev,
-        {
-          user_email: session.user.email,
-          mensaje_usuario: text,
-          respuesta_asistente: respuesta,
-          timestamp: new Date().toISOString(),
-          session_id: selectedSession,
-        },
-      ]);
       }
     } catch (err) {
       console.error(err);
@@ -190,19 +132,7 @@ export default function Home() {
     }
   }, [messages]);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      const ref = menuRefs.current[openMenuId];
-      if (ref && !ref.contains(e.target)) {
-        setOpenMenuId(null);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [openMenuId]);
-
-  // Validación de sesión
+  // Mientras NextAuth valida
   if (loadingSession) {
     return (
       <div className="flex items-center justify-center h-screen bg-white">
@@ -210,26 +140,16 @@ export default function Home() {
       </div>
     );
   }
+
+  // Si no autenticado
   if (status === "unauthenticated") {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
         <div className="p-8 bg-white rounded-lg shadow-lg text-center">
-          <h1 className="text-2xl font-bold mb-4 font-pixel uppercase text-4xl">
-            GALGOAI CHAT
-          </h1>
-          <div className="flex justify-center mb-6">
-            <div className="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-              <Image
-                src="/bot.png"
-                width={128}
-                height={128}
-                alt="GalgoAI Logo"
-                className="object-contain"
-              />
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold mb-4">Acceso Restringido</h1>
+          <p className="mb-4">Inicia sesión con tu correo institucional</p>
           <button
-            onClick={() => signIn("google", { prompt: "select_account" })}
+            onClick={() => signIn("google")}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
           >
             Iniciar Sesión con Google
@@ -244,175 +164,74 @@ export default function Home() {
   return (
     <main className="flex h-screen">
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-1/4 bg-gray-100 p-4 overflow-y-auto">
-        <input
-          type="text"
-          placeholder="Buscar chat..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="mb-4 p-2 border rounded focus:ring"
-        />
-        <button
-          onClick={newChat}
-          className="mb-4 px-4 py-2 bg-white rounded shadow hover:shadow-md transition-shadow cursor-pointer"
-        >
-          + Nuevo chat
-        </button>
-        {filtered.map((id) => {
-          const first = historyData.find((e) => e.session_id === id);
-          const mensaje = first?.mensaje_usuario?.trim();
-          const snippet = mensaje
-            ? mensaje.slice(0, 20) + (mensaje.length > 20 ? "…" : "")
-            : "Chat sin título";
-
-          return (
-            <div
-              key={id}
-              className="relative mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors"
+      <aside
+        className={`
+          flex flex-col bg-gray-100 p-4 overflow-y-auto
+          transition-all duration-300 ease-in-out
+          ${sidebarOpen ? "w-1/4" : "w-0"}
+        `}
+      >
+        {sidebarOpen && (
+          <>
+            <input
+              type="text"
+              placeholder="Buscar chat..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-4 p-2 border rounded focus:ring"
+            />
+            <button
+              onClick={newChat}
+              className="mb-4 px-4 py-2 bg-white rounded shadow hover:shadow-md transition-shadow"
             >
-              <div
-                onClick={() => selectSession(id)}
-                className="cursor-pointer pr-6"
-              >
-                {editingId === id ? (
-                  <input
-                    type="text"
-                    className="w-full border rounded px-2 py-1 text-sm"
-                    value={editedTitle}
-                    onChange={(e) => setEditedTitle(e.target.value)}
-                    onBlur={() => {
-                      if (editedTitle.trim()) {
-                        const nuevoTitulo = editedTitle.trim();
-
-                        // Actualiza en Supabase
-                        fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            session_id: id,
-                            titulo: nuevoTitulo,
-                            user_email: session.user.email,
-                          }),
-                        })
-                          .then(() => {
-                            setTitles((prev) => ({
-                              ...prev,
-                              [id]: nuevoTitulo,
-                            }));
-                          })
-                          .catch(console.error);
-                      }
-                      setEditingId(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.target.blur();
-                      }
-                    }}
-                    autoFocus
-                  />
-                ) : (
-                  <>
-                    <p className="font-medium">
-                      {titles[id] || snippet || id.split("_").pop()}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {/^\d+$/.test(id.split("_").pop())
-                        ? new Date(
-                            Number(id.split("_").pop()),
-                          ).toLocaleDateString("es-MX")
-                        : id.split("_").pop()}
-                    </p>
-                  </>
-                )}
-              </div>
-
-              {/* Botón de opciones */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenuId(openMenuId === id ? null : id);
-                }}
-                className="absolute top-2 right-2 text-gray-600 bg-gray-200 rounded px-2 py-1 text-sm hover:bg-gray-300"
-              >
-                ⋯
-              </button>
-
-              {/* Menú contextual */}
-              {openMenuId === id && (
+              + Nuevo chat
+            </button>
+            {filtered.map((id) => {
+              const first = historyData.find((e) => e.session_id === id);
+              const snippet =
+                first?.mensaje_usuario.slice(0, 20) +
+                (first?.mensaje_usuario.length > 20 ? "…" : "");
+              return (
                 <div
-                  ref={(el) => (menuRefs.current[id] = el)}
-                  className="absolute right-2 top-10 z-10 bg-white border rounded shadow-md w-32 transition-all duration-150 ease-out animate-fade"
+                  key={id}
+                  onClick={() => selectSession(id)}
+                  className="mb-3 p-2 bg-white rounded hover:bg-gray-200 transition-colors cursor-pointer"
                 >
-                  <button
-                    onClick={() => {
-                      setOpenMenuId(null);
-                      setEditedTitle(
-                        localStorage.getItem(`chat_title_${id}`) ||
-                          snippet ||
-                          "",
-                      );
-                      setEditingId(id);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    ✏️ Editar
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          "¿Eliminar este chat? Esta acción no se puede deshacer.",
-                        )
-                      ) {
-                        localStorage.removeItem(`chat_${id}`);
-                        localStorage.removeItem(`chat_title_${id}`);
-                        setSessions((prev) => prev.filter((s) => s !== id));
-                        if (selectedSession === id) {
-                          setSelectedSession("");
-                          setMessages([]);
-                        }
-                        setOpenMenuId(null);
-
-                        // Eliminar título de Supabase si existe
-                        fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
-                          method: "DELETE",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            session_id: id,
-                            user_email: session.user.email,
-                          }),
-                        }).catch(console.error);
-
-                        // Eliminar historial de conversación
-                        fetch(
-                          `${process.env.NEXT_PUBLIC_API_URL}/conversaciones`,
-                          {
-                            method: "DELETE",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              session_id: id,
-                              user_email: session.user.email,
-                            }),
-                          },
-                        ).catch(console.error);
-                      }
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-red-100 text-sm text-red-600"
-                  >
-                    🗑️ Eliminar
-                  </button>
+                  <p className="font-medium">{snippet || id.split("_").pop()}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(Number(id.split("_").pop())).toLocaleDateString()}
+                  </p>
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </>
+        )}
       </aside>
 
       {/* Chat area */}
       <section className="flex flex-col flex-1">
+        {/* Header con botón burger y logo a la izquierda */}
         <header className="relative flex items-center justify-between h-16 px-6 bg-gradient-to-b from-teal-200 to-teal-500">
-          <div className="flex-shrink-0 ml-8">
+          {/* Grupo burger + logo a la izquierda */}
+          <div className="flex items-center">
+            <button
+              onClick={() => setSidebarOpen((o) => !o)}
+              className="p-2 mr-4 text-white focus:outline-none"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
             <Image
               src="/project-logo.png"
               width={64}
@@ -421,23 +240,26 @@ export default function Home() {
               className="object-contain"
             />
           </div>
+
+          {/* Título centrado */}
           <h1 className="absolute left-1/2 transform -translate-x-1/2 uppercase font-bold text-4xl md:text-5xl font-pixel">
             GALGOAI CHAT
           </h1>
+
+          {/* Avatar a la derecha */}
           <div className="flex-shrink-0 mr-8 relative">
             <img
               src={session.user.image}
               alt="avatar"
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={() => setMenuOpen((o) => !o)}
               className="w-12 h-12 rounded-full cursor-pointer"
             />
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded">
                 <button
-                  onClick={() => {
-                    localStorage.removeItem("last_session");
-                    signOut({ callbackUrl: window.location.origin });
-                  }}
+                  onClick={() =>
+                    signOut({ callbackUrl: window.location.origin })
+                  }
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
                 >
                   Cerrar sesión
@@ -453,7 +275,7 @@ export default function Home() {
           className="flex-1 overflow-y-auto p-4 scroll-bg"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.4)), url('/wallpaper.png')",
+              "linear-gradient(rgba(255,255,255,0.1), rgba(255,255,255,0.1)), url('/nuevofondo.jpeg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -467,26 +289,28 @@ export default function Home() {
                 className={`mb-4 flex ${isUser ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`flex items-center ${isUser ? "flex-row-reverse" : ""}`}
+                  className={`flex items-center ${
+                    isUser ? "flex-row-reverse" : ""
+                  }`}
                 >
                   {/* Avatar */}
                   <div
-                    className={
-                      isUser
-                        ? "mx-2 flex-shrink-0"
-                        : "bg-white p-1 rounded-full mx-2 flex-shrink-0"
-                    }
+                    className={`mx-2 flex-shrink-0 ${
+                      isUser ? "" : "bg-white p-1 rounded-full"
+                    }`}
                   >
                     <img
                       src={avatarSrc}
                       alt={isUser ? "Tu perfil" : "Bot Galgo"}
-                      className={`${isUser ? "w-10 h-10" : "w-12 h-12"} rounded-full object-contain`}
+                      className={`rounded-full object-contain ${
+                        isUser ? "w-12 h-12" : "w-14 h-14"
+                      }`}
                     />
                   </div>
                   {/* Globo de texto */}
                   <div
                     className={`
-                      max-w-lg p-4 border text-black font-sans text-lg font-medium shadow-sm
+                      max-w-lg p-4 border text-black font-sans text-lg font-medium shadow-sm transition-shadow
                       ${
                         isUser
                           ? "bg-green-100 border-green-300 rounded-tl-lg rounded-bl-lg rounded-br-none"
@@ -505,6 +329,7 @@ export default function Home() {
           })}
         </div>
 
+        {/* Input */}
         <footer className="p-4 bg-white border-t flex">
           <textarea
             ref={inputRef}
