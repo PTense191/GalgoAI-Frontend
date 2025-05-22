@@ -22,6 +22,22 @@ export default function Home() {
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
+  function obtenerFechaLegible(id) {
+    const parte = id.split("_").pop();
+
+    try {
+      if (!isNaN(parte)) {
+        // Es un timestamp
+        return new Date(Number(parte)).toLocaleDateString();
+      } else {
+        // Es una fecha tipo ISO (ej. 2025-05-22T02:40:28.843492)
+        return new Date(parte).toLocaleDateString();
+      }
+    } catch {
+      return "Fecha desconocida";
+    }
+  }
+
   // Cargar historial al autenticarse
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -126,6 +142,24 @@ export default function Home() {
       console.error(err);
     }
   };
+
+  //Carga los títulos personalizados
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/titulos?email=${session.user.email}`,
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const titles = {};
+        data.forEach(({ session_id, titulo }) => {
+          titles[session_id] = titulo;
+        });
+        setCustomTitles(titles);
+      })
+      .catch(console.error);
+  }, [status, session]);
 
   //Click fuera del icono "..."
   useEffect(() => {
@@ -266,9 +300,7 @@ export default function Home() {
                           id.split("_").pop()}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {new Date(
-                          Number(id.split("_").pop()),
-                        ).toLocaleDateString()}
+                        {obtenerFechaLegible(id)}
                       </p>
                     </>
                   )}
