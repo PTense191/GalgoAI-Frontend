@@ -550,10 +550,7 @@ export default function Home() {
 
       {/* Overlay que se muestra detrás del sidebar */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-10 bg-black bg-opacity-20 backdrop-blur-sm pointer-events-auto"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 z-10 bg-black/10 pointer-events-auto" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Chat area */}
