@@ -82,20 +82,20 @@ export default function Home() {
     setMessages(msgs);
   };
 
-  // Nuevo chat
   const newChat = async () => {
     const id = `${session.user.email}_${Date.now()}`;
     setSessions((prev) => [...prev, id]);
     setSelectedSession(id);
-    setMessages([
-      {
-        sender: "bot",
-        text: "¡Hola! ¿En qué puedo ayudarte hoy?",
-        timestamp: new Date().toLocaleTimeString(),
-      },
-    ]);
 
-    // Registrar el nuevo chat con un título por defecto
+    const mensajeInicial = {
+      sender: "bot",
+      text: "¡Hola! ¿En qué puedo ayudarte hoy?",
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    setMessages([mensajeInicial]);
+
+    // Guardar el título por defecto
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/titulos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -110,6 +110,18 @@ export default function Home() {
       ...prev,
       [id]: "Chat sin título",
     }));
+
+    // Guardar el mensaje inicial en el historial
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/historial`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_email: session.user.email,
+        mensaje_usuario: "", // aún no hay input del usuario
+        respuesta_asistente: mensajeInicial.text,
+        session_id: id,
+      }),
+    });
   };
 
   // Enviar mensaje
